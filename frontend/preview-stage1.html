@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>MESHNET - Stage 1 Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6eb;--ac:#0b7a75;--bad:#c0392b;--ok:#1f8a4c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#98a2b3;--bd:#262c36;--ac:#3cc4bc;--bad:#ff7a6b;--ok:#4cd68a}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#98a2b3;--bd:#262c36;--ac:#3cc4bc;--bad:#ff7a6b;--ok:#4cd68a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.w{max-width:960px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}.sub{color:var(--mut);font-size:13px;margin:2px 0 14px}
+.g{display:grid;gap:12px;grid-template-columns:1fr}@media(min-width:760px){.g{grid-template-columns:3fr 2fr}}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px}
+.c h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
+.m{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.m div{border:1px solid var(--bd);border-radius:8px;padding:8px}
+.m b{display:block;font-size:20px}.m span{font-size:12px;color:var(--mut)}
+button{background:var(--ac);color:var(--bg);border:0;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+button.s{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+ul{list-style:none;margin:0;padding:0}li{padding:5px 0;border-bottom:1px solid var(--bd);font-size:14px;display:flex;gap:8px}
+.ok{color:var(--ok)}.no{color:var(--mut)}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+pre{margin:0;font-size:12px;overflow-x:auto}.sw{overflow-x:auto}
+</style></head><body><div class="w"><div id="root"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const h=React.createElement,{useState,useEffect}=React;
+const P={A:[300,60],B:[300,170],C:[300,280],D:[470,110]};
+const L=[['C','B'],['B','A'],['B','D']];
+const TESTS=['Discovery: A finds B and C','Authentication: sessions established','Encryption: peer links encrypted','Gateway: A identified as Internet gateway','Relay: B forwards traffic','Multi-hop: C reaches Internet via B → A','Failure: A drops, D selected','Mobility: routes update on movement'];
+const j=(v,s)=>+(v+(Math.random()-.5)*s).toFixed(1);
+function App(){
+ const [aUp,setA]=useState(true),[step,setStep]=useState(0),[failed,setF]=useState(false),[m,setM]=useState({bw:18,lat:42,loss:1.2});
+ useEffect(()=>{const t=setInterval(()=>setStep(s=>s<6?s+1:s),900);return()=>clearInterval(t)},[]);
+ useEffect(()=>{const t=setInterval(()=>setM(aUp?{bw:j(18,3),lat:j(42,6),loss:j(1.2,.4)}:{bw:j(9,2),lat:j(80,8),loss:j(.7,.3)}),1200);return()=>clearInterval(t)},[aUp]);
+ const gw=aUp?'A':'D',path=['C','B',gw],done=TESTS.map((_,i)=>i<step||(i===6&&failed)||(i===7&&failed&&step>=6));
+ const toggle=()=>{setA(!aUp);if(aUp)setF(true)};
+ const act=l=>path.includes(l[0])&&path.includes(l[1])&&Math.abs(path.indexOf(l[0])-path.indexOf(l[1]))===1;
+ const nodeCol=k=>k==='A'&&!aUp?'var(--bad)':'var(--ac)';
+ const lab={A:'Gateway',B:'Relay',C:'Client',D:'Backup gateway'};
+ return h('div',null,
+  h('h1',null,'MESHNET Control Plane'),
+  h('div',{className:'sub'},'Stage 1 preview - simulated M1 milestone: C → B → A, with failover to D'),
+  h('div',{className:'g'},
+   h('div',{className:'c'},h('h2',null,'Live topology'),
+    h('div',{className:'sw'},h('svg',{viewBox:'0 0 600 340',style:{width:'100%',minWidth:340}},
+     L.map((l,i)=>h('line',{key:i,x1:P[l[0]][0],y1:P[l[0]][1],x2:P[l[1]][0],y2:P[l[1]][1],stroke:act(l)?'var(--ac)':'var(--bd)',strokeWidth:act(l)?4:2,strokeDasharray:l.includes('A')&&!aUp?'4 6':'none'})),
+     Object.keys(P).map(k=>h('g',{key:k},h('circle',{cx:P[k][0],cy:P[k][1],r:24,fill:'var(--card)',stroke:nodeCol(k),strokeWidth:3}),
+      h('text',{x:P[k][0],y:P[k][1]+5,textAnchor:'middle',fill:'var(--tx)',fontWeight:700},k),
+      h('text',{x:P[k][0]+32,y:P[k][1]+4,fill:'var(--mut)',fontSize:12},lab[k]+(k==='A'&&!aUp?' (down)':''))))
+    )),
+    h('div',{className:'row'},h('button',{onClick:toggle},aUp?'Simulate gateway A failure':'Restore gateway A'),
+     h('button',{className:'s',onClick:()=>{setStep(0);setF(false);setA(true)}},'Reset')),
+    h('pre',{style:{marginTop:10}},'Active route: '+path.join(' → '))),
+   h('div',null,
+    h('div',{className:'c'},h('h2',null,'Route metrics'),
+     h('div',{className:'m'},h('div',null,h('b',null,m.bw+' Mbps'),h('span',null,'Throughput')),h('div',null,h('b',null,m.lat+' ms'),h('span',null,'Latency')),
+      h('div',null,h('b',null,m.loss+'%'),h('span',null,'Packet loss')),h('div',null,h('b',null,'2 hops'),h('span',null,'Path length')))),
+    h('div',{className:'c',style:{marginTop:12}},h('h2',null,'MVP test sequence'),
+     h('ul',null,TESTS.map((t,i)=>h('li',{key:i,className:done[i]?'ok':'no'},h('span',null,done[i]?'✔':'○'),t)))))
+  ));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script></body></html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>MESHNET - Stage 3 Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6eb;--ac:#0b7a75;--bad:#c0392b;--ok:#1f8a4c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#98a2b3;--bd:#262c36;--ac:#3cc4bc;--bad:#ff7a6b;--ok:#4cd68a}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#98a2b3;--bd:#262c36;--ac:#3cc4bc;--bad:#ff7a6b;--ok:#4cd68a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.w{max-width:960px;margin:0 auto;padding:16px}h1{font-size:20px;margin:0}.sub{color:var(--mut);font-size:13px;margin:2px 0 14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}.card b{display:block;font-size:22px}.card span{font-size:12px;color:var(--mut)}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:10px}table{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+th{text-align:left;font-size:12px;color:var(--mut);text-transform:uppercase;padding:10px}td{padding:10px;border-top:1px solid var(--bd)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}code{font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{background:var(--ac);color:var(--bg);border:0;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}button.s{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+</style></head><body><div class="w"><div id="root"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const h=React.createElement,{useState,useEffect,useRef}=React;
+const j=(v,s)=>+(v+(Math.random()-.5)*s).toFixed(1),hexId=()=>[...Array(32)].map(()=>(Math.random()*16|0).toString(16)).join('');
+const mk=role=>({node_id:hexId(),role,last_seen:Date.now(),network_type:role==='gateway'?'4G':'mesh',battery_percent:60+Math.random()*40|0,silent:false});
+const ago=t=>{const s=Math.round((Date.now()-t)/1000);return s<60?s+'s ago':Math.round(s/60)+'m ago'};
+const on=n=>Date.now()-n.last_seen<10000;
+function App(){
+ // Simulated feed standing in for the WebSocket: same data shape as the real server
+ const ref=useRef(['gateway','relay','client','gateway'].map(mk)),[nodes,setNodes]=useState([...ref.current]),[,tick]=useState(0);
+ useEffect(()=>{
+  const t=setInterval(()=>{ref.current=ref.current.map(n=>n.silent?n:{...n,last_seen:Date.now(),
+    estimated_bandwidth:j(n.role==='gateway'?18:6,5),latency_ms:j(n.role==='gateway'?42:70,12),battery_percent:Math.max(5,n.battery_percent-(Math.random()<.2?1:0))});
+   setNodes([...ref.current])},2000);
+  const c=setInterval(()=>tick(x=>x+1),1000);return()=>{clearInterval(t);clearInterval(c)}},[]);
+ const add=()=>{ref.current=[...ref.current,mk('client')];setNodes([...ref.current])};
+ const drop=()=>{const i=ref.current.findIndex(n=>n.role==='gateway'&&!n.silent);if(i<0)return;ref.current=ref.current.map((n,k)=>k===i?{...n,silent:true}:n);setNodes([...ref.current])};
+ const reset=()=>{ref.current=['gateway','relay','client','gateway'].map(mk);setNodes([...ref.current])};
+ const o=nodes.filter(on),gw=o.filter(n=>n.role==='gateway').length,b=o.length?Math.round(o.reduce((s,n)=>s+n.battery_percent,0)/o.length):0;
+ return h('div',null,h('h1',null,'MESHNET Dashboard'),
+  h('div',{className:'sub'},'Stage 3 preview - simulated live feed (the real app streams the same data over WebSocket)'),
+  h('div',{className:'cards'},h('div',{className:'card'},h('b',null,o.length+'/'+nodes.length),h('span',null,'Nodes online')),
+   h('div',{className:'card'},h('b',null,gw),h('span',null,'Active gateways')),h('div',{className:'card'},h('b',null,b+'%'),h('span',null,'Avg battery'))),
+  h('div',{className:'tw'},h('table',null,h('thead',null,h('tr',null,['Node','Role','Network','Mbps','Latency','Battery','Last seen'].map(x=>h('th',{key:x},x)))),
+   h('tbody',null,nodes.map(n=>h('tr',{key:n.node_id},h('td',null,h('span',{className:'dot',style:{background:on(n)?'var(--ok)':'var(--bad)'}}),h('code',null,n.node_id.slice(0,8))),
+    h('td',null,n.role),h('td',null,n.network_type),h('td',null,n.estimated_bandwidth??'-'),h('td',null,n.latency_ms!=null?n.latency_ms+' ms':'-'),h('td',null,n.battery_percent+'%'),h('td',null,ago(n.last_seen))))))),
+  h('div',{className:'row'},h('button',{onClick:add},'Add node'),h('button',{className:'s',onClick:drop},'Silence a gateway'),h('button',{className:'s',onClick:reset},'Reset')));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script></body></html>

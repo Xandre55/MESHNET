@@ -1,0 +1,19 @@
+{
+  "name": "meshnet-backend",
+  "version": "0.3.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "simulate": "node simulate.js",
+    "test:client": "node client-test.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "pg": "^8.12.0"
+  }
+}
